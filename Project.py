@@ -58,11 +58,18 @@ transition_speed = 0.008
 
 def draw_smoke():
     glColor3f(0.5, 0.5, 0.5)
-    for pos in collision_smoke:
-        glPushMatrix()
-        glTranslatef(pos[0], pos[1], pos[2])
-        glutSolidSphere(5, 8, 8)
-        glPopMatrix()        
+    for smoke in collision_smoke:
+        x, y, z = smoke["pos"]
+        for _ in range(int(smoke["lifetime"] * 10)):  # fewer lines as it fades
+            dx = random.uniform(-3, 3)
+            dy = random.uniform(2, 6)
+            dz = random.uniform(-3, 3)
+            glBegin(GL_LINES)
+            glVertex3f(x, y, z)
+            glVertex3f(x + dx, y + dy, z + dz)
+            glEnd()
+
+
 
 def draw_road():
     glColor3f(0.1, 0.1, 0.1)
@@ -160,7 +167,10 @@ def check_collision():
             dx = gun_pos[0] - spot["x"]
             dz = gun_pos[2] - spot["z"]
             if abs(dx) < car_size and abs(dz) < car_size:
-                collision_smoke.append((gun_pos[0], gun_pos[1] + 10, gun_pos[2]))
+                collision_smoke.append({
+                    "pos": (gun_pos[0], gun_pos[1] + 10, gun_pos[2]),
+                    "lifetime": 1.0  # starts fully visible
+                })
                 damage = min(max_damage, damage + 10)
                 return True
     return False
@@ -266,6 +276,12 @@ def update_world():
 
     while len(collision_smoke) > 5:
         collision_smoke.pop(0)
+    
+    for smoke in collision_smoke:
+        smoke["lifetime"] -= 0.02  # reduce opacity
+
+    # Remove fully faded smoke
+    collision_smoke[:] = [s for s in collision_smoke if s["lifetime"] > 0]
 
 
 def update_sky_color():
@@ -381,7 +397,7 @@ def keyboardListener(key, x, y):
     global transition_night, target_sky_color, damage
     global skip_next_collision 
 
-    if damage >= max_damage:
+    if damage >= max_damage and key != b'r':
         return 
 
     rad = math.radians(gun_angle)
