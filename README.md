@@ -42,6 +42,6 @@ The goal is to park the car accurately in green zones while avoiding red zones a
 - PyOpenGL
 - GLUT
 ## Contributors
-Yasir Arafat
-Arifin Huda Ifty
-Nazmunnaher Promi
+1.Yasir Arafat
+2.Arifin Huda Ifty
+3.Nazmunnaher Promi
