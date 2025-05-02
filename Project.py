@@ -41,7 +41,20 @@ parking_spots = [
     {"x": 100, "z": 100, "color": (0, 1, 0), "type": "valid"},
     {"x": -150, "z": -100, "color": (1, 0, 0), "type": "no-parking"},
     {"x": 0, "z": 200, "color": (0.5, 0.5, 0.5), "type": "obstacle", "cube_color": get_random_obstacle_color()},
+
+
+    {"x": 200, "z": -200, "color": (0, 1, 0), "type": "valid"},
+    {"x": -250, "z": 150, "color": (0, 1, 0), "type": "valid"},
+    {"x": 50, "z": -250, "color": (0, 1, 0), "type": "valid"},
+    {"x": -100, "z": 300, "color": (0, 1, 0), "type": "valid"},
+
+    {"x": -300, "z": -300, "color": (1, 0, 0), "type": "no-parking"},
+    {"x": 150, "z": 250, "color": (1, 0, 0), "type": "no-parking"},
+    {"x": 300, "z": 100, "color": (1, 0, 0), "type": "no-parking"},
+    {"x": -200, "z": 0, "color": (1, 0, 0), "type": "no-parking"},
 ]
+
+
 
 
 car_size = 20
@@ -235,10 +248,15 @@ def draw_damage_meter():
     glMatrixMode(GL_MODELVIEW)
 
 
+def spawn_random_parking_spot(spot_type):
+    x = random.randint(-GRID_SIZE // 2 + 50, GRID_SIZE // 2 - 50)
+    z = random.randint(-GRID_SIZE // 2 + 50, GRID_SIZE // 2 - 50)
+    color = (0, 1, 0) if spot_type == "valid" else (1, 0, 0)
+    parking_spots.append({"x": x, "z": z, "color": color, "type": spot_type})
 
 
 def try_parking():
-    global score, status_message
+    global score, status_message, parking_spots
     for spot in parking_spots:
         dx = abs(gun_pos[0] - spot["x"])
         dz = abs(gun_pos[2] - spot["z"])
@@ -246,16 +264,23 @@ def try_parking():
             if spot["type"] == "valid":
                 score += 1
                 status_message = "Parked Successfully!"
+                # Remove the parked spot and add a new random one
+                parking_spots.remove(spot)
+                spawn_random_parking_spot("valid")
             elif spot["type"] == "no-parking":
-                status_message = "NO PARKING ZONE!"
+                score = max(0, score - 1)
+                status_message = "NO PARKING ZONE! Score -1"
+                parking_spots.remove(spot)
+                spawn_random_parking_spot("no-parking")
             return
     status_message = "Not in any parking spot"
 
+
 def update_world():
-    global gun_pos, last_valid_pos, skip_next_collision
+    global gun_pos, last_valid_pos, skip_next_collision, score, status_message
 
     if skip_next_collision:
-        skip_next_collision = False  
+        skip_next_collision = False
         last_valid_pos[:] = gun_pos[:]
         return
 
@@ -264,8 +289,21 @@ def update_world():
     else:
         last_valid_pos[:] = gun_pos[:]
 
+    for spot in parking_spots:
+        if spot["type"] == "no-parking":
+            dx = abs(gun_pos[0] - spot["x"])
+            dz = abs(gun_pos[2] - spot["z"])
+            if dx < car_size and dz < car_size:
+                score = max(0, score - 1)
+                status_message = "ALERT: You're on a NO PARKING zone! Score -1"
+                parking_spots.remove(spot)
+                spawn_random_parking_spot("no-parking")
+                break  
+
     while len(collision_smoke) > 5:
         collision_smoke.pop(0)
+
+
 
 
 def update_sky_color():
